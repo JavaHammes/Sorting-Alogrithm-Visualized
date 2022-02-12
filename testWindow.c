@@ -5,39 +5,37 @@
 #include <time.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <unistd.h>
 
 const char g_szClassName[] = "MainWindow";
 
-const UINT WINDOW_WIDTH = 900;
-const UINT WINDOW_HEIGHT = 450;
+const UINT WINDOW_WIDTH = 1000;
+const UINT WINDOW_HEIGHT = 1000;
 
-const UINT HEIGHT_SCALE = 20;
-const UINT OFFSET_X = 10;
-
+int heightScale;
+int offsetX;
 int delay;
-int arr[] = {}; 
-int size;
 
+int arr[65535]; 
+int *array;
+int size;
 
 void swap(int *a, int *b);
 void randomNumbers(int arr[], int size);
 void printArray (int arr[], int size);
 
+void sortArr(int arr[], int size, HWND hwnd);
+
 void paintRectangles(PAINTSTRUCT ps){
 	int i;
 	UINT posX;
 	UINT height;
-	
-	printf("Size: %d\n", size);
-
-	printArray(arr,size);
 
 	for ( i = 0; i < size; i++){
-		posX = 10 + OFFSET_X * i;
-		height = (WINDOW_HEIGHT - 50) - HEIGHT_SCALE * arr[i];
-		Rectangle(ps.hdc, posX, WINDOW_HEIGHT - 50, posX + OFFSET_X, height);
+		posX = offsetX * i;
+		height = WINDOW_HEIGHT - heightScale * arr[i];
+		Rectangle(ps.hdc, posX, WINDOW_HEIGHT, posX + offsetX, height);
 	}	
-
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
@@ -48,7 +46,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 	switch(msg){
 	case WM_CREATE:
 		hdc = GetDC(hwnd);
-
 		break;
 	case WM_PAINT:
 	{
@@ -73,7 +70,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmpLine, int nCmdShow){
-
 	WNDCLASSEX wc;	
 	HWND hwnd;
 	MSG Msg;
@@ -86,7 +82,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmpLine
 	wc.hInstance = hInstance;
 	wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hbrBackground = (HBRUSH) GetStockObject(GRAY_BRUSH); 
+	wc.hbrBackground = (HBRUSH) GetStockObject(BLACK_BRUSH); 
 	wc.lpszMenuName = NULL;
 	wc.lpszClassName = g_szClassName;
 	wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
@@ -112,7 +108,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmpLine
 	srand(time(NULL));
 	LPWSTR *szArglist;
   	int nArgs;
-   	int i;
 
    	szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
    	if( NULL == szArglist ){
@@ -123,15 +118,33 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmpLine
 		return 0;
 	}else{
 		int sizeL = _wtoi(szArglist[1]);
+
+		if( sizeL != 10 
+		 && sizeL != 20 
+	         && sizeL != 25 
+		 && sizeL != 40
+		 && sizeL != 50 
+		 && sizeL != 100 
+		 && sizeL != 125 
+		 && sizeL != 200 
+		 && sizeL != 250){
+			wprintf(L"Invalid size!\n");
+			return 0;
+		}	
+
 		delay = _wtoi(szArglist[2]);
-
+		//array = malloc(sizeL *sizeof(int));
+		//memset(array,0, sizeof(int));
 		randomNumbers(arr, sizeL);
-
 		size = sizeL;
+		heightScale = 1000 / size;
+		offsetX = WINDOW_WIDTH / size;
 	}
 
 	ShowWindow(hwnd, nCmdShow);
 	UpdateWindow(hwnd);
+
+	sortArr(arr, size, hwnd);	
 
 	while(GetMessage(&Msg, NULL, 0, 0) > 0){
 		TranslateMessage(&Msg);
@@ -143,7 +156,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmpLine
 }
 
 void randomNumbers(int arr[], int size){	
-
 	int i,j;
 
 	for ( i = 1; i <= size; i++ ){
@@ -158,9 +170,10 @@ void randomNumbers(int arr[], int size){
 }
 
 void swap(int *a, int *b){
-	int temp = *a;
+	int *temp = (int*) malloc(sizeof(int));
+	*temp = *a;
 	*a = *b;
-	*b = temp;
+	*b = *temp;
 }
 
 void printArray(int arr[], int size){	
@@ -171,4 +184,22 @@ void printArray(int arr[], int size){
 	}
 
 	printf("\n");
+}
+
+void sortArr(int arr[], int size, HWND hwnd){
+
+	int i, j, min_idx;
+
+	for ( i = 0; i < size-1; i++ ){
+		min_idx = i;
+		for ( j = i+1; j < size; j++ ){
+			if ( arr[j] < arr [min_idx] ){
+				min_idx = j;
+			}
+		}
+		InvalidateRect(hwnd, NULL, 1);
+		UpdateWindow(hwnd);
+		swap(&arr[min_idx], &arr[i]);
+		usleep(100000);
+	}	
 }
