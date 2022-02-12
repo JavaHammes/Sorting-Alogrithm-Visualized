@@ -1,6 +1,10 @@
 // -lgdi32 -luser32 -lkernel32 -lcomctl32 -lm -mwindows
 #include <windows.h>
 #include <stdio.h>
+#include <shellapi.h>
+#include <time.h>
+#include <stdlib.h>
+#include <assert.h>
 
 const char g_szClassName[] = "MainWindow";
 
@@ -10,20 +14,28 @@ const UINT WINDOW_HEIGHT = 450;
 const UINT HEIGHT_SCALE = 20;
 const UINT OFFSET_X = 10;
 
-int arr[] = {10,2,9,3,8,4,7,5,6,1};
-const UINT size = sizeof(arr)/sizeof(arr[0]);
+int delay;
+int arr[] = {}; 
+int size;
+
+
+void swap(int *a, int *b);
+void randomNumbers(int arr[], int size);
+void printArray (int arr[], int size);
 
 void paintRectangles(PAINTSTRUCT ps){
 	int i;
 	UINT posX;
 	UINT height;
 	
+	printf("Size: %d\n", size);
+
+	printArray(arr,size);
 
 	for ( i = 0; i < size; i++){
 		posX = 10 + OFFSET_X * i;
 		height = (WINDOW_HEIGHT - 50) - HEIGHT_SCALE * arr[i];
 		Rectangle(ps.hdc, posX, WINDOW_HEIGHT - 50, posX + OFFSET_X, height);
-		printf("index: %d\nheight: %d\n", i, height);
 	}	
 
 }
@@ -61,7 +73,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmpLine, int nCmdShow){
-	WNDCLASSEX wc;
+
+	WNDCLASSEX wc;	
 	HWND hwnd;
 	MSG Msg;
 
@@ -96,6 +109,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmpLine
 		return 0;
 	}
 
+	srand(time(NULL));
+	LPWSTR *szArglist;
+  	int nArgs;
+   	int i;
+
+   	szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
+   	if( NULL == szArglist ){
+      		wprintf(L"CommandLineToArgvW() Failed!\n");
+     	 	return 0;
+   	}else if ( nArgs != 3 ){
+      		wprintf(L"Usage: program.exe [SIZE] [DELAY]\n");
+		return 0;
+	}else{
+		int sizeL = _wtoi(szArglist[1]);
+		delay = _wtoi(szArglist[2]);
+
+		randomNumbers(arr, sizeL);
+
+		size = sizeL;
+	}
+
 	ShowWindow(hwnd, nCmdShow);
 	UpdateWindow(hwnd);
 
@@ -103,6 +137,38 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmpLine
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);
 	}
+	
 
 	return Msg.wParam;
+}
+
+void randomNumbers(int arr[], int size){	
+
+	int i,j;
+
+	for ( i = 1; i <= size; i++ ){
+		arr[i-1] = i;
+	}
+
+	for ( j = size - 1; j > 0; j-- ){
+		int k = rand() % (j + 1);
+
+		swap(&arr[j], &arr[k]);
+	}
+}
+
+void swap(int *a, int *b){
+	int temp = *a;
+	*a = *b;
+	*b = temp;
+}
+
+void printArray(int arr[], int size){	
+	int i;
+
+	for( i = 0; i < size; i++ ){
+		printf("%d ", arr[i]);
+	}
+
+	printf("\n");
 }
