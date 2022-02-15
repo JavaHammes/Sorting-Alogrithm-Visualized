@@ -15,6 +15,7 @@ const UINT WINDOW_HEIGHT = 1000;
 int heightScale;
 int offsetX;
 long delay;
+int algo;
 
 int arr[65535]; 
 int *array;
@@ -114,37 +115,34 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmpLine
 	}
 
 	srand(time(NULL));
-	LPWSTR *szArglist;
-  	int nArgs;
-
-   	szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
-   	if( NULL == szArglist ){
-      		wprintf(L"CommandLineToArgvW() Failed!\n");
-     	 	return 0;
-   	}else if ( nArgs != 3 ){
-      		wprintf(L"Usage: program.exe [SIZE] [DELAY]\n");
-		return 0;
-	}else{
-		int sizeL = _wtoi(szArglist[1]);
-
-		if(1000 % sizeL != 0){
-			wprintf(L"Invalid size!\n");
-			return 0;
-		}	
-
-		delay = _wtoi(szArglist[2]) * 1000;
-		randomNumbers(arr, sizeL);
-		size = sizeL;
-		heightScale = 1000 / size;
-		offsetX = WINDOW_WIDTH / size;
+	printf("Enter amount of rectangles to be sorted:\n");	
+	scanf("%d", &size);
+	if(1000 % size != 0){
+		printf("Invalid Size!");
 	}
+
+	randomNumbers(arr, size);
+	heightScale = 1000 / size;
+	offsetX = WINDOW_WIDTH / size;
+
+	printf("Enter amount of delay:\n");
+	scanf("%d", &delay);
+
+	delay *= 1000;
+
+	printf("Enter sorting algorithm:\n");
+	scanf("%d", &algo);
 
 	ShowWindow(hwnd, nCmdShow);
 	UpdateWindow(hwnd);
-
-	//selectSortArr(arr, size, hwnd);	
-	//bubbleSortArr(arr,size,hwnd);
-	radixSortArr(arr,size,hwnd);
+	
+	if(algo == 1){
+		selectSortArr(arr, size, hwnd);
+	}else if(algo == 2){
+		bubbleSortArr(arr, size, hwnd);
+	}else if(algo == 3){
+		radixSortArr(arr, size, hwnd);
+	}
 
 	InvalidateRect(hwnd, NULL, 1);
 	UpdateWindow(hwnd);
@@ -153,7 +151,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmpLine
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);
 	}
-	
 
 	return Msg.wParam;
 }
