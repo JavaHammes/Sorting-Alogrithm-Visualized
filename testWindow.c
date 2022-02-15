@@ -29,8 +29,11 @@ int getMax(int arr[], int n);
 void selectSortArr(int arr[], int size, HWND hwnd);
 void bubbleSortArr(int arr[], int size, HWND hwnd);
 void radixSortArr(int arr[], int size, HWND hwnd);
+void insertionSortArr(int arr[], int size, HWND hwnd);
+void heapSortArr(int arr[], int size, HWND hwnd);
 
-void countSortArr(int arr[], int n, int exp);
+void countSort(int arr[], int n, int exp, HWND hwnd);
+void heapify(int arr[], int size, int i);
 
 void updateWindowAndSleep(HWND hwnd);
 
@@ -142,6 +145,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmpLine
 		bubbleSortArr(arr, size, hwnd);
 	}else if(algo == 3){
 		radixSortArr(arr, size, hwnd);
+	}else if(algo == 4){
+		insertionSortArr(arr, size, hwnd);
+	}else if(algo == 5){
+		heapSortArr(arr, size, hwnd);
 	}
 
 	InvalidateRect(hwnd, NULL, 1);
@@ -210,6 +217,25 @@ void countSort(int arr[], int n, int exp, HWND hwnd){
 	}
 }
 
+void heapify(int arr[], int size, int i){
+	int largest = i;
+	int l = 2 * i +1;
+	int r = 2 * i +2;
+
+	if(l < size && arr[l] > arr[largest]){
+		largest = l;
+	}
+
+	if(r < size && arr[r] > arr[largest]){
+		largest = r;
+	}
+
+	if(largest != i){
+		swap(&arr[i], &arr[largest]);
+		heapify(arr, size, largest);
+	}
+}
+
 void printArray(int arr[], int size){	
 	int i;
 
@@ -260,6 +286,38 @@ void radixSortArr(int arr[], int size, HWND hwnd){
 		countSort(arr, size, exp, hwnd);
 	}
 }
+
+void insertionSortArr(int arr[], int n, HWND hwnd){
+
+	int i, key, j;
+	for(i = 1; i < n; i++){
+		key = arr[i];
+		j = i - 1;
+
+		while(j >= 0 && arr[j] > key) {
+			arr[j + 1] = arr[j];
+			j = j -1;
+		}
+		arr[j + 1] = key;
+		updateWindowAndSleep(hwnd);
+	}
+}
+
+void heapSortArr(int arr[], int size, HWND hwnd){
+	
+	int i;
+
+	for(i = size / 2 - 1; i >= 0; i--){
+		heapify(arr, size, i);
+	}
+
+	for(i = size - 1; i > 0; i--){
+		swap(&arr[0], &arr[i]);
+		updateWindowAndSleep(hwnd);
+		heapify(arr, i , 0);
+	}
+}
+
 
 void updateWindowAndSleep(HWND hwnd){
 	InvalidateRect(hwnd, NULL, 1);
