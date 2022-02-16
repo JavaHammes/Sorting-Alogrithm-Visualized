@@ -1,16 +1,17 @@
-// -lgdi32 -luser32 -lkernel32 -lcomctl32 -lm -mwindows
+// -lgdi32 
 #include <windows.h>
 #include <stdio.h>
 #include <shellapi.h>
 #include <time.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <assert.h>
 #include <unistd.h>
 
-const char g_szClassName[] = "MainWindow";
+#define WINDOW_WIDTH 1000
+#define WINDOW_HEIGHT 1000
 
-const UINT WINDOW_WIDTH = 1000;
-const UINT WINDOW_HEIGHT = 1000;
+const char g_szClassName[] = "MainWindow";
 
 int heightScale;
 int offsetX;
@@ -18,7 +19,6 @@ long delay;
 int algo;
 
 int arr[65535]; 
-int *array;
 int size;
 
 void swap(int *a, int *b);
@@ -31,12 +31,14 @@ void bubbleSortArr(int arr[], int size, HWND hwnd);
 void radixSortArr(int arr[], int size, HWND hwnd);
 void insertionSortArr(int arr[], int size, HWND hwnd);
 void heapSortArr(int arr[], int size, HWND hwnd);
+void quickSortArr(int arr[], int low, int high, HWND hwnd);
+void bucketSortArr(int arr[], int size, HWND hwnd);
 
-void countSort(int arr[], int n, int exp, HWND hwnd);
+void countSort(int arr[], int size, int exp, HWND hwnd);
 void heapify(int arr[], int size, int i);
+int partition(int arr[], int low, int high);
 
 void updateWindowAndSleep(HWND hwnd);
-
 
 void paintRectangles(PAINTSTRUCT ps){
 	int i;
@@ -118,9 +120,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmpLine
 	}
 
 	srand(time(NULL));
+	printf("  ___          _   _           \n");
+	printf(" / __| ___ _ _| |_(_)_ _  __ _ \n");  
+	printf(" |__ |/ _ | '_|  _| | ' || _` |\n");  
+	printf(" |___/|___/_|  |__|_|_||_|__, |\n");  
+	printf("                         |___/ \n");  
+	printf("--------------------------------------\n");
 	printf("Enter amount of rectangles to be sorted:\n");	
+	printf("--------------------------------------\n");
+	printf("10 || 20 || 25 || 40 || 50 || 100 || 200 || 250\n");
+	printf("--------------------------------------\n");
+	printf(">> ");
 	scanf("%d", &size);
-	if(1000 % size != 0){
+	printf("--------------------------------------\n");
+	if(1000 % size != 0 && size >= 10){
 		printf("Invalid Size!");
 	}
 
@@ -128,13 +141,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmpLine
 	heightScale = 1000 / size;
 	offsetX = WINDOW_WIDTH / size;
 
-	printf("Enter amount of delay:\n");
+	printf("Enter amount of delay (in millisec):\n");
+	printf("--------------------------------------\n");
+	printf(">> ");
 	scanf("%d", &delay);
+	printf("--------------------------------------\n");
 
 	delay *= 1000;
 
 	printf("Enter sorting algorithm:\n");
+	printf("--------------------------------------\n");
+	printf("[1] SELECTION SORT \n[2] BUBBLE SORT \n[3] RADIX SORT\n[4] INSERTION SORT\n[5] HEAP SORT\n[6] QUICK SORT\n[7] BUCKET SORT\n");
+	printf("--------------------------------------\n");
+	printf(">> ");
 	scanf("%d", &algo);
+	printf("--------------------------------------\n");
 
 	ShowWindow(hwnd, nCmdShow);
 	UpdateWindow(hwnd);
@@ -149,10 +170,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmpLine
 		insertionSortArr(arr, size, hwnd);
 	}else if(algo == 5){
 		heapSortArr(arr, size, hwnd);
+	}else if(algo == 6){
+		quickSortArr(arr, 0, size -1, hwnd);
+	}else if(algo == 7){
+		bucketSortArr(arr, size, hwnd);
+	}else{
+		printf("Wrong Input\n");
 	}
 
 	InvalidateRect(hwnd, NULL, 1);
 	UpdateWindow(hwnd);
+
+	printf("FINISHED !!! \n");
+	printf("--------------------------------------\n");
 
 	while(GetMessage(&Msg, NULL, 0, 0) > 0){
 		TranslateMessage(&Msg);
@@ -194,11 +224,11 @@ int getMax(int arr[], int n){
 	return mx;
 }
 
-void countSort(int arr[], int n, int exp, HWND hwnd){
-	int output[n];
+void countSort(int arr[], int size, int exp, HWND hwnd){
+	int output[size];
 	int i, count[10] = {0};
 
-	for(i = 0; i < n; i++){
+	for(i = 0; i < size; i++){
 		count[(arr[i] / exp) % 10]++;
 	}
 
@@ -206,13 +236,14 @@ void countSort(int arr[], int n, int exp, HWND hwnd){
 		count[i] += count[i-1];
 	}
 
-	for( i = n-1; i >= 0; i--){
+	for( i = size-1; i >= 0; i--){
 		output[count[(arr[i] / exp) % 10] -1] = arr[i];
 		count[(arr[i] / exp) % 10] --;
 	}
 
-	for( i = 0; i < n; i++){
+	for( i = 0; i < size; i++){
 		arr[i] = output[i];
+		printArray(arr, size);
 		updateWindowAndSleep(hwnd);
 	}
 }
@@ -269,8 +300,8 @@ void bubbleSortArr(int arr[], int size, HWND hwnd){
 	for( i = 0; i < size-1; i++){
 		for(j = 0; j < size-i-1; j++){
 			if(arr[j] > arr[j+1]){
-				printArray(arr, size);
 				swap(&arr[j], &arr[j+1]);
+				printArray(arr, size);
 				updateWindowAndSleep(hwnd);
 			}
 		}
@@ -287,10 +318,10 @@ void radixSortArr(int arr[], int size, HWND hwnd){
 	}
 }
 
-void insertionSortArr(int arr[], int n, HWND hwnd){
+void insertionSortArr(int arr[], int size, HWND hwnd){
 
 	int i, key, j;
-	for(i = 1; i < n; i++){
+	for(i = 1; i < size; i++){
 		key = arr[i];
 		j = i - 1;
 
@@ -318,6 +349,56 @@ void heapSortArr(int arr[], int size, HWND hwnd){
 	}
 }
 
+int partition(int arr[], int low, int high){
+	int pivot = arr[high];
+	int i = (low -1);
+	int j;
+
+	for(j = low; j <= high -1; j++){
+		if(arr[j] < pivot){
+			i++;
+			swap(&arr[i], &arr[j]);
+		}
+	}
+	swap(&arr[i+1], &arr[high]);
+	return (i+1);
+}
+
+void quickSortArr(int arr[], int low, int high, HWND hwnd){
+	if(low < high){
+		updateWindowAndSleep(hwnd);
+		int pi = partition(arr, low, high);
+
+		quickSortArr(arr, low, pi - 1, hwnd);
+		quickSortArr(arr, pi+1, high, hwnd);
+	}
+}
+
+void bucketSortArr(int arr[], int size, HWND hwnd){
+
+	int * cpy = malloc(size * sizeof(int));
+	memcpy(cpy, arr, size * sizeof(int));
+	int i, j;
+	int count[size];
+	for( i = 0; i < size; i++){
+		count[i] = 0;
+	}
+
+	for(i = 0; i < size; i++){
+		(count[arr[i]])++;
+	}
+
+	for(i = 0, j = 0; i < size; i++){
+		for(; count[i] > 0; (count[i])--){
+			arr[j++] = i;
+		}
+		updateWindowAndSleep(hwnd);
+	}
+
+	arr[size-1] = getMax(cpy, size);
+	updateWindowAndSleep(hwnd);
+
+}
 
 void updateWindowAndSleep(HWND hwnd){
 	InvalidateRect(hwnd, NULL, 1);
